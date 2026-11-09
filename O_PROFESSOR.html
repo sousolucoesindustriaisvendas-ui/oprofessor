@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>O PROFESSOR — Gestão de Empréstimos</title>
+<style>
+:root{--red:#C8102E;--red-dark:#8E0B20;--red-soft:#FCE8EB;--ink:#1A1A1A;--muted:#6B6B6B;--line:#E6E6E6;--bg:#FFFFFF;--bg2:#FAFAFA;--ok:#1E7B34;--warn:#B26A00}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg2);color:var(--ink);font-size:15px}
+header{background:var(--red);color:#fff;padding:0 24px;display:flex;align-items:center;gap:32px;flex-wrap:wrap;border-bottom:4px solid var(--red-dark)}
+.logo{font-weight:900;font-size:24px;letter-spacing:4px;padding:18px 0}
+.logo small{display:block;font-size:10px;letter-spacing:2px;font-weight:500;opacity:.85}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{background:none;border:none;color:#fff;font:inherit;font-weight:600;padding:22px 16px;cursor:pointer;border-bottom:3px solid transparent;opacity:.85}
+nav button:hover{opacity:1}
+nav button.active{opacity:1;border-bottom-color:#fff;background:var(--red-dark)}
+main{max-width:1200px;margin:0 auto;padding:28px 24px}
+h1{font-size:22px;margin-bottom:20px}
+h2{font-size:17px;margin:24px 0 12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
+.kpi{background:#fff;border:1px solid var(--line);border-left:5px solid var(--red);border-radius:8px;padding:16px}
+.kpi span{color:var(--muted);font-size:13px}
+.kpi b{display:block;font-size:24px;margin-top:6px}
+.card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:20px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;text-transform:uppercase;color:var(--muted);padding:10px 8px;border-bottom:2px solid var(--red)}
+td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:hover td{background:var(--bg2)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700}
+.t-ok{background:#E5F4E8;color:var(--ok)}
+.t-open{background:#FFF3DF;color:var(--warn)}
+.t-late{background:var(--red);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #CCC;border-radius:6px;font:inherit;background:#fff}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--red);border-color:var(--red)}
+.req::after{content:" *";color:var(--red)}
+.btn{background:var(--red);color:#fff;border:none;padding:10px 18px;border-radius:6px;font:inherit;font-weight:700;cursor:pointer}
+.btn:hover{background:var(--red-dark)}
+.btn.ghost{background:#fff;color:var(--red);border:1px solid var(--red)}
+.btn.ghost:hover{background:var(--red-soft)}
+.btn.sm{padding:6px 10px;font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.docs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.doc{border:2px dashed #DDD;border-radius:8px;padding:14px;text-align:center}
+.doc.has{border-color:var(--ok);border-style:solid}
+.doc img{max-width:100%;max-height:120px;margin-top:8px;border-radius:4px}
+.hidden{display:none}
+.toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.toolbar input,.toolbar select{max-width:280px}
+.empty{color:var(--muted);text-align:center;padding:30px}
+.preview{background:var(--red-soft);border-radius:6px;padding:12px;margin-top:14px;font-weight:600}
+dialog{border:none;border-radius:10px;padding:24px;max-width:700px;width:95%;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:6px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">O PROFESSOR<small>GESTÃO DE EMPRÉSTIMOS</small></div>
+  <nav>
+    <button data-tab="painel" class="active">Painel</button>
+    <button data-tab="cadastro">Cadastro de Cliente</button>
+    <button data-tab="clientes">Clientes</button>
+    <button data-tab="emprestimos">Empréstimos</button>
+    <button data-tab="devedores">Devedores</button>
+    <button data-tab="inadimplentes">Inadimplentes</button>
+    <button data-tab="config">Configurações</button>
+  </nav>
+</header>
+<main>
+
+<section id="painel">
+  <h1>Painel</h1>
+  <div class="kpis" id="kpis"></div>
+  <div class="card"><h2 style="margin-top:0">Vencimentos próximos (7 dias)</h2><div id="proximos"></div></div>
+</section>
+
+<section id="cadastro" class="hidden">
+  <h1 id="cadTitulo">Cadastro de Cliente</h1>
+  <form id="formCliente" class="card">
+    <input type="hidden" id="cId">
+    <h2 style="margin-top:0">Dados pessoais</h2>
+    <div class="grid">
+      <div><label class="req">Nome completo</label><input id="cNome" required></div>
+      <div><label class="req">CPF</label><input id="cCpf" required placeholder="000.000.000-00" maxlength="14"></div>
+      <div><label class="req">RG</label><input id="cRg" required></div>
+      <div><label>Data de nascimento</label><input id="cNasc" type="date"></div>
+      <div><label class="req">Telefone / WhatsApp</label><input id="cTel" required placeholder="(00) 00000-0000"></div>
+      <div><label>E-mail</label><input id="cEmail" type="email"></div>
+      <div><label class="req">Endereço</label><input id="cEnd" required></div>
+      <div><label>Profissão / Renda</label><input id="cProf"></div>
+      <div><label>Contato de referência</label><input id="cRef" placeholder="Nome e telefone"></div>
+    </div>
+    <div style="margin-top:14px"><label>Observações</label><textarea id="cObs" rows="2"></textarea></div>
+    <h2>Documentos pessoais</h2>
+    <div class="docs" id="docsBox"></div>
+    <div class="actions">
+      <button class="btn" type="submit">Salvar cliente</button>
+      <button class="btn ghost" type="button" id="cLimpar">Limpar formulário</button>
+    </div>
+  </form>
+</section>
+
+<section id="clientes" class="hidden">
+  <h1>Clientes</h1>
+  <div class="toolbar"><input id="buscaCli" placeholder="Buscar por nome ou CPF"></div>
+  <div class="card"><div id="listaClientes"></div></div>
+</section>
+
+<section id="emprestimos" class="hidden">
+  <h1>Empréstimos</h1>
+  <form id="formEmp" class="card">
+    <h2 style="margin-top:0">Novo empréstimo</h2>
+    <div class="grid">
+      <div><label class="req">Cliente</label><select id="eCli" required></select></div>
+      <div><label class="req">Valor emprestado (R$)</label><input id="eValor" type="number" step="0.01" min="0" required></div>
+      <div><label class="req">Juros (%)</label><input id="eJuros" type="number" step="0.1" min="0" required></div>
+      <div><label class="req">Juros por dia de atraso (%)</label><input id="eMora" type="number" step="0.01" min="0" required></div>
+      <div><label class="req">Data do empréstimo</label><input id="eData" type="date" required></div>
+      <div><label class="req">Vencimento</label><input id="eVenc" type="date" required></div>
+    </div>
+    <div class="preview" id="ePrev">Total a receber: R$ 0,00</div>
+    <div class="actions"><button class="btn" type="submit">Registrar empréstimo</button></div>
+  </form>
+  <div class="toolbar">
+    <input id="buscaEmp" placeholder="Buscar cliente">
+    <select id="filtroEmp"><option value="">Todos</option><option value="aberto">Em aberto</option><option value="atrasado">Inadimplente</option><option value="quitado">Quitado</option></select>
+  </div>
+  <div class="card"><div id="listaEmp"></div></div>
+</section>
+
+<section id="devedores" class="hidden">
+  <h1>Devedores <small style="color:var(--muted);font-weight:400;font-size:14px">— empréstimos em aberto, dentro do prazo</small></h1>
+  <div class="card"><div id="listaDev"></div></div>
+</section>
+
+<section id="inadimplentes" class="hidden">
+  <h1 style="color:var(--red)">Inadimplentes <small style="color:var(--muted);font-weight:400;font-size:14px">— vencidos e não quitados</small></h1>
+  <div class="card"><div id="listaInad"></div></div>
+</section>
+
+<section id="config" class="hidden">
+  <h1>Configurações</h1>
+  <div class="card">
+    <div class="grid">
+      <div><label>Taxa de juros padrão (%)</label><input id="cfgJuros" type="number" step="0.1"></div>
+      <div><label>Juros por dia de atraso padrão (%)</label><input id="cfgMora" type="number" step="0.01"></div>
+      <div><label>Prazo padrão (dias)</label><input id="cfgPrazo" type="number"></div>
+    </div>
+    <div class="actions"><button class="btn" id="cfgSalvar">Salvar configurações</button></div>
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">Backup</h2>
+    <p style="color:var(--muted);margin-bottom:12px">Os dados ficam salvos neste navegador. Exporte um backup com frequência.</p>
+    <div class="actions">
+      <button class="btn" id="exportar">Exportar backup</button>
+      <label class="btn ghost" style="margin:0">Importar backup<input type="file" id="importar" accept=".json" hidden></label>
+    </div>
+  </div>
+</section>
+</main>
+
+<dialog id="dlg"></dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+const DOCS=[{k:"rgFrente",n:"RG / CNH — frente",r:1},{k:"rgVerso",n:"RG / CNH — verso",r:1},{k:"cpfDoc",n:"CPF",r:0},{k:"comprovante",n:"Comprovante de residência",r:1},{k:"selfie",n:"Selfie com documento",r:1},{k:"renda",n:"Comprovante de renda",r:0}];
+let db=load();
+let docTemp={};
+function load(){try{return JSON.parse(localStorage.getItem("oprofessor"))||{clientes:[],emp:[],cfg:{juros:30,prazo:30,mora:1}}}catch(e){return{clientes:[],emp:[],cfg:{juros:30,prazo:30}}}}
+function save(){try{localStorage.setItem("oprofessor",JSON.stringify(db))}catch(e){alert("Armazenamento cheio. Exporte um backup e use imagens menores.")}}
+const $=id=>document.getElementById(id);
+const brl=v=>(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const fdt=d=>d?d.split("-").reverse().join("/"):"—";
+const hoje=()=>new Date().toISOString().slice(0,10);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",2500)}
+function cli(id){return db.clientes.find(c=>c.id===id)||{nome:"(removido)"}}
+function total(e){return e.valor*(1+e.juros/100)}
+function pago(e){return (e.pag||[]).reduce((s,p)=>s+p.v,0)}
+function base(e){return Math.max(0,total(e)+(e.extra||0)-pago(e))}
+function moraDias(e){const ini=e.moraDesde&&e.moraDesde>e.venc?e.moraDesde:e.venc;return Math.max(0,Math.floor((new Date(hoje())-new Date(ini))/864e5))}
+function mora(e){return base(e)*(e.mora||0)/100*moraDias(e)}
+function saldo(e){return base(e)+mora(e)}
+function status(e){if(base(e)<0.005)return"quitado";return e.venc<hoje()?"atrasado":"aberto"}
+function diasAtraso(e){return Math.floor((new Date(hoje())-new Date(e.venc))/864e5)}
+const TAG={quitado:'<span class="tag t-ok">Quitado</span>',aberto:'<span class="tag t-open">Em aberto</span>',atrasado:'<span class="tag t-late">Inadimplente</span>'};
+
+// Abas
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>abrir(b.dataset.tab));
+function abrir(t){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));document.querySelectorAll("main section").forEach(s=>s.classList.toggle("hidden",s.id!==t));render()}
+
+// Documentos
+function renderDocs(){$("docsBox").innerHTML=DOCS.map(d=>{const v=docTemp[d.k];return`<div class="doc ${v?"has":""}"><label class="${d.r?"req":""}">${d.n}</label><input type="file" accept="image/*,application/pdf" data-k="${d.k}">${v?(v.startsWith("data:image")?`<img src="${v}">`:"<p style='margin-top:8px'>📄 PDF anexado</p>"):""}</div>`}).join("");
+document.querySelectorAll("#docsBox input").forEach(i=>i.onchange=async()=>{const f=i.files[0];if(!f)return;docTemp[i.dataset.k]=await comprimir(f);renderDocs()})}
+function comprimir(f){return new Promise(res=>{const r=new FileReader();r.onload=()=>{if(!f.type.startsWith("image")){res(r.result);return}const img=new Image();img.onload=()=>{const m=1200,s=Math.min(1,m/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=img.width*s;c.height=img.height*s;c.getContext("2d").drawImage(img,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",.75))};img.src=r.result};r.readAsDataURL(f)})}
+
+$("cCpf").oninput=e=>{let v=e.target.value.replace(/\D/g,"").slice(0,11);v=v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2");e.target.value=v};
+const CAMPOS=["Nome","Cpf","Rg","Nasc","Tel","Email","End","Prof","Ref","Obs"];
+function limpar(){$("formCliente").reset();$("cId").value="";docTemp={};$("cadTitulo").textContent="Cadastro de Cliente";renderDocs()}
+$("cLimpar").onclick=limpar;
+$("formCliente").onsubmit=e=>{e.preventDefault();
+  const falta=DOCS.filter(d=>d.r&&!docTemp[d.k]).map(d=>d.n);
+  if(falta.length){alert("Documentos obrigatórios faltando:\n- "+falta.join("\n- "));return}
+  const id=$("cId").value||uid();const c={id,docs:{...docTemp},criado:hoje()};
+  CAMPOS.forEach(k=>c[k.toLowerCase()]=$("c"+k).value.trim());
+  if(db.clientes.some(x=>x.cpf===c.cpf&&x.id!==id)){alert("Já existe um cliente com este CPF.");return}
+  const i=db.clientes.findIndex(x=>x.id===id);if(i>=0){c.criado=db.clientes[i].criado;db.clientes[i]=c}else db.clientes.push(c);
+  save();limpar();toast("Cliente salvo");abrir("clientes")};
+function editarCliente(id){const c=cli(id);$("cId").value=id;CAMPOS.forEach(k=>$("c"+k).value=c[k.toLowerCase()]||"");docTemp={...(c.docs||{})};$("cadTitulo").textContent="Editar Cliente — "+c.nome;renderDocs();abrir("cadastro")}
+function excluirCliente(id){if(db.emp.some(e=>e.cli===id&&status(e)!=="quitado")){alert("Este cliente tem empréstimos em aberto.");return}if(!confirm("Excluir "+cli(id).nome+"?"))return;db.clientes=db.clientes.filter(c=>c.id!==id);save();render()}
+function verCliente(id){const c=cli(id),emps=db.emp.filter(e=>e.cli===id);
+  $("dlg").innerHTML=`<h1>${c.nome}</h1><div class="grid" style="margin-bottom:14px">
+  <div><b>CPF:</b> ${c.cpf}</div><div><b>RG:</b> ${c.rg}</div><div><b>Nascimento:</b> ${fdt(c.nasc)}</div><div><b>Telefone:</b> ${c.tel}</div><div><b>E-mail:</b> ${c.email||"—"}</div><div><b>Endereço:</b> ${c.end}</div><div><b>Profissão/Renda:</b> ${c.prof||"—"}</div><div><b>Referência:</b> ${c.ref||"—"}</div></div>
+  ${c.obs?`<p><b>Obs:</b> ${c.obs}</p>`:""}<h2>Documentos</h2><div class="docs">${DOCS.map(d=>{const v=(c.docs||{})[d.k];return`<div class="doc ${v?"has":""}"><b>${d.n}</b>${v?(v.startsWith("data:image")?`<a href="${v}" download="${c.nome}-${d.k}.jpg"><img src="${v}"></a>`:`<p><a href="${v}" download="${c.nome}-${d.k}.pdf">Baixar PDF</a></p>`):"<p style='color:var(--muted)'>Não enviado</p>"}</div>`}).join("")}</div>
+  <h2>Empréstimos (${emps.length})</h2>${tabelaEmp(emps,false)}<div class="actions"><button class="btn" onclick="dlg.close()">Fechar</button></div>`;$("dlg").showModal()}
+
+function render(){
+  // Painel
+  const ab=db.emp.filter(e=>status(e)!=="quitado"),at=db.emp.filter(e=>status(e)==="atrasado");
+  const emprestado=db.emp.reduce((s,e)=>s+e.valor,0),recebido=db.emp.reduce((s,e)=>s+pago(e),0),aReceber=ab.reduce((s,e)=>s+saldo(e),0),atrasoV=at.reduce((s,e)=>s+saldo(e),0);
+  const lucro=db.emp.filter(e=>status(e)==="quitado").reduce((s,e)=>s+total(e)-e.valor,0);
+  $("kpis").innerHTML=[["Clientes cadastrados",db.clientes.length],["Total emprestado",brl(emprestado)],["Total recebido",brl(recebido)],["A receber",brl(aReceber)],["Em atraso",`<span style="color:var(--red)">${brl(atrasoV)}</span>`],["Inadimplentes",`<span style="color:var(--red)">${new Set(at.map(e=>e.cli)).size}</span>`],["Lucro realizado (quitados)",brl(lucro)]].map(([a,b])=>`<div class="kpi"><span>${a}</span><b>${b}</b></div>`).join("");
+  const lim=new Date(Date.now()+7*864e5).toISOString().slice(0,10);
+  const prox=ab.filter(e=>e.venc>=hoje()&&e.venc<=lim).sort((a,b)=>a.venc.localeCompare(b.venc));
+  $("proximos").innerHTML=prox.length?tabelaEmp(prox):'<p class="empty">Nenhum vencimento nos próximos 7 dias.</p>';
+  // Clientes
+  const q=$("buscaCli").value.toLowerCase();
+  const cs=db.clientes.filter(c=>c.nome.toLowerCase().includes(q)||c.cpf.includes(q));
+  $("listaClientes").innerHTML=cs.length?`<table><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Situação</th><th class="num">Saldo devedor</th><th></th></tr>${cs.map(c=>{const es=db.emp.filter(e=>e.cli===c.id);const s=es.some(e=>status(e)==="atrasado")?"atrasado":es.some(e=>status(e)==="aberto")?"aberto":"quitado";return`<tr><td><b>${c.nome}</b></td><td>${c.cpf}</td><td>${c.tel}</td><td>${es.length?TAG[s]:'<span class="tag" style="background:#EEE">Sem empréstimo</span>'}</td><td class="num">${brl(es.reduce((a,e)=>a+saldo(e),0))}</td><td style="white-space:nowrap"><button class="btn sm ghost" onclick="verCliente('${c.id}')">Ver</button> <button class="btn sm ghost" onclick="editarCliente('${c.id}')">Editar</button> <button class="btn sm ghost" onclick="excluirCliente('${c.id}')">Excluir</button></td></tr>`}).join("")}</table>`:'<p class="empty">Nenhum cliente. Cadastre na aba "Cadastro de Cliente".</p>';
+  // Empréstimos
+  $("eCli").innerHTML='<option value="">Selecione…</option>'+db.clientes.slice().sort((a,b)=>a.nome.localeCompare(b.nome)).map(c=>`<option value="${c.id}">${c.nome} — ${c.cpf}</option>`).join("");
+  const qe=$("buscaEmp").value.toLowerCase(),fe=$("filtroEmp").value;
+  $("listaEmp").innerHTML=tabelaEmp(db.emp.filter(e=>cli(e.cli).nome.toLowerCase().includes(qe)&&(!fe||status(e)===fe)).sort((a,b)=>b.data.localeCompare(a.data)));
+  $("listaDev").innerHTML=tabelaEmp(db.emp.filter(e=>status(e)==="aberto").sort((a,b)=>a.venc.localeCompare(b.venc)));
+  $("listaInad").innerHTML=tabelaEmp(at.sort((a,b)=>a.venc.localeCompare(b.venc)),true,true);
+  $("cfgJuros").value=db.cfg.juros;$("cfgPrazo").value=db.cfg.prazo;$("cfgMora").value=db.cfg.mora??1;
+}
+function tabelaEmp(l,acoes=true,atraso=false){if(!l.length)return'<p class="empty">Nenhum registro.</p>';
+  return`<table><tr><th>Cliente</th><th>Data</th><th>Vencimento</th>${atraso?"<th>Dias de atraso</th>":""}<th class="num">Emprestado</th><th class="num">Juros</th><th class="num">Total</th><th class="num">Pago</th><th class="num">Juros atraso</th><th class="num">Saldo</th><th>Status</th>${acoes?"<th></th>":""}</tr>${l.map(e=>`<tr><td><a href="#" onclick="verCliente('${e.cli}');return false" style="color:var(--red);font-weight:600">${cli(e.cli).nome}</a><br><small style="color:var(--muted)">${cli(e.cli).tel||""}</small></td><td>${fdt(e.data)}</td><td>${fdt(e.venc)}</td>${atraso?`<td><b style="color:var(--red)">${diasAtraso(e)}</b></td>`:""}<td class="num">${brl(e.valor)}</td><td class="num">${e.juros}%</td><td class="num">${brl(total(e))}</td><td class="num">${brl(pago(e))}</td><td class="num" style="color:var(--red)">${mora(e)>0?brl(mora(e))+`<br><small>${e.mora||0}%/dia</small>`:"—"}</td><td class="num"><b>${brl(saldo(e))}</b></td><td>${TAG[status(e)]}</td>${acoes?`<td style="white-space:nowrap">${status(e)!=="quitado"?`<button class="btn sm" onclick="pagar('${e.id}')">Pagamento</button> <button class="btn sm ghost" onclick="renovar('${e.id}')">Renovar</button> `:""}<button class="btn sm ghost" onclick="historico('${e.id}')">Histórico</button> <button class="btn sm ghost" onclick="excluirEmp('${e.id}')">✕</button></td>`:""}</tr>`).join("")}</table>`}
+
+function prevEmp(){const v=+$("eValor").value||0,j=+$("eJuros").value||0;$("ePrev").textContent=`Juros: ${brl(v*j/100)}  •  Total a receber: ${brl(v*(1+j/100))}`}
+["eValor","eJuros"].forEach(i=>$(i).oninput=prevEmp);
+function resetEmp(){$("formEmp").reset();$("eJuros").value=db.cfg.juros;$("eMora").value=db.cfg.mora??1;$("eData").value=hoje();$("eVenc").value=new Date(Date.now()+db.cfg.prazo*864e5).toISOString().slice(0,10);prevEmp()}
+$("formEmp").onsubmit=e=>{e.preventDefault();if($("eVenc").value<$("eData").value){alert("O vencimento deve ser após a data do empréstimo.");return}
+  db.emp.push({id:uid(),cli:$("eCli").value,valor:+$("eValor").value,juros:+$("eJuros").value,mora:+$("eMora").value,data:$("eData").value,venc:$("eVenc").value,pag:[]});save();resetEmp();render();toast("Empréstimo registrado")};
+function pagar(id){const e=db.emp.find(x=>x.id===id);const v=prompt(`Saldo de ${cli(e.cli).nome}: ${brl(saldo(e))}${mora(e)>0?` (inclui ${brl(mora(e))} de juros de atraso)`:""}\nValor recebido (R$):`,saldo(e).toFixed(2));if(v===null)return;const n=parseFloat(v.replace(",","."));if(!(n>0)){alert("Valor inválido");return}
+  const m=mora(e);if(m>0){e.extra=(e.extra||0)+m;e.moraDesde=hoje()}e.pag.push({v:n,d:hoje()});save();render();toast(saldo(e)<0.005?"Empréstimo quitado!":"Pagamento registrado")}
+function renovar(id){const e=db.emp.find(x=>x.id===id);const s=saldo(e);const m0=mora(e);if(m0>0){e.extra=(e.extra||0)+m0;e.moraDesde=hoje()}if(!confirm(`Renovar: o saldo de ${brl(s)} vira um novo empréstimo com ${db.cfg.juros}% de juros e o atual é encerrado. Continuar?`))return;
+  e.pag.push({v:s,d:hoje(),obs:"Renovação"});db.emp.push({id:uid(),cli:e.cli,valor:+s.toFixed(2),juros:db.cfg.juros,mora:e.mora||0,data:hoje(),venc:new Date(Date.now()+db.cfg.prazo*864e5).toISOString().slice(0,10),pag:[],renovado:e.id});save();render();toast("Empréstimo renovado")}
+function historico(id){const e=db.emp.find(x=>x.id===id);$("dlg").innerHTML=`<h1>Histórico — ${cli(e.cli).nome}</h1><p>Emprestado ${brl(e.valor)} em ${fdt(e.data)} a ${e.juros}% • Atraso ${e.mora||0}%/dia • Total ${brl(total(e))} • Vence ${fdt(e.venc)}</p><h2>Pagamentos</h2>${e.pag.length?`<table><tr><th>Data</th><th class="num">Valor</th><th>Obs</th></tr>${e.pag.map(p=>`<tr><td>${fdt(p.d)}</td><td class="num">${brl(p.v)}</td><td>${p.obs||""}</td></tr>`).join("")}</table>`:'<p class="empty">Nenhum pagamento.</p>'}<div class="actions"><button class="btn" onclick="dlg.close()">Fechar</button></div>`;$("dlg").showModal()}
+function excluirEmp(id){if(!confirm("Excluir este empréstimo e seus pagamentos?"))return;db.emp=db.emp.filter(e=>e.id!==id);save();render()}
+["buscaCli","buscaEmp","filtroEmp"].forEach(i=>$(i).oninput=render);
+$("cfgSalvar").onclick=()=>{db.cfg.juros=+$("cfgJuros").value||30;db.cfg.prazo=+$("cfgPrazo").value||30;db.cfg.mora=+$("cfgMora").value||0;save();resetEmp();toast("Configurações salvas")};
+$("exportar").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(db)],{type:"application/json"}));a.download=`oprofessor-backup-${hoje()}.json`;a.click()};
+$("importar").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.clientes||!d.emp)throw 0;if(confirm("Substituir todos os dados atuais pelo backup?")){db=d;save();resetEmp();render();toast("Backup importado")}}catch(x){alert("Arquivo inválido")}};r.readAsText(f)};
+const dlg=$("dlg");
+renderDocs();resetEmp();render();
+</script>
+</body>
+</html>
